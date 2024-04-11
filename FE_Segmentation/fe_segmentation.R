@@ -63,7 +63,7 @@ fviz_cluster(km5, data = fe_scale, ellipse.type = "norm", ggtheme = theme_minima
 # Data Viz......................................................................................................................
 
 fe_stats <- cbind(fe_stats, km4[1])
-fe_stats[,11] <- as.factor(fe_stats_test[,11])
+fe_stats[,11] <- as.factor(fe_stats[,11])
 
 aggregate(fe_stats[1:9], by = list(Cluster = fe_stats$cluster), mean)
 
