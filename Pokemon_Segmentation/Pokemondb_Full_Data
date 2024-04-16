@@ -1,0 +1,45 @@
+#Segmentation Analysis of Pokemon Stats
+
+library(rvest)
+library(factoextra)
+library(cluster)
+library(lattice)
+
+# Data Import................................................................................................................
+
+
+url <- "https://pokemondb.net/pokedex/all"
+
+tables <- read_html(url) %>% html_table(fill = TRUE)
+
+
+poke_stats <- data.frame(tables)
+poke_stats$Type <- as.factor(poke_stats$Type)
+rownames(poke_stats) <- poke_stats[,2]
+poke_stats <- poke_stats[,-1:-2]
+
+
+poke_stats <- poke_stats[!grepl("Mega", rownames(poke_stats)),]
+
+
+
+
+
+#fe_scale <- data.frame(scale(fe_stats[-10]))
+
+
+# Segmentation..................................................................................................................
+
+fviz_nbclust(poke_stats[,3:8], kmeans, method = "silhouette")
+fviz_nbclust(poke_stats[,3:8], kmeans, method = "gap_stat")
+fviz_nbclust(poke_stats[,3:8], kmeans, method = "wss")
+
+km2 <- kmeans(poke_stats[,3:8], centers = 2, nstart = 25)
+km3 <- kmeans(poke_stats[,3:8], centers = 3, nstart = 25)
+km4 <- kmeans(poke_stats[,3:8], centers = 4, nstart = 25)
+km5 <- kmeans(poke_stats[,3:8], centers = 5, nstart = 25)
+
+fviz_cluster(km2, data = poke_stats[,3:8], ellipse.type = "norm", ggtheme = theme_minimal(), labelsize = 0)
+fviz_cluster(km3, data = poke_stats[,3:8], ellipse.type = "norm", ggtheme = theme_minimal(), labelsize = 0)
+fviz_cluster(km5, data = poke_stats[,3:8], ellipse.type = "norm", ggtheme = theme_minimal(), labelsize = 0)
+
