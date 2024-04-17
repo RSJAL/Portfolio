@@ -3,7 +3,11 @@
 library(rvest)
 library(factoextra)
 library(cluster)
-library(lattice)
+library(stringr)
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+library(writexl)
 
 # Data Import................................................................................................................
 
@@ -19,7 +23,6 @@ poke_stats <- poke_stats[,c(-1:-3, -10:-11)]
 
 
 poke_stats <- poke_stats[!grepl("Mega", rownames(poke_stats)),]
-
 #poke_stats <- poke_stats[!str_count(rownames(poke_stats), "Raichu") > 1,]
 
 for (i in rownames(poke_stats)) {
@@ -30,22 +33,60 @@ for (i in rownames(poke_stats)) {
 
 
 
-#fe_scale <- data.frame(scale(fe_stats[-10]))
+poke_scale <- data.frame(scale(poke_stats))
 
 
 # Segmentation..................................................................................................................
 
-fviz_nbclust(poke_stats, kmeans, method = "silhouette")
-fviz_nbclust(poke_stats, kmeans, method = "gap_stat")
-fviz_nbclust(poke_stats, kmeans, method = "wss")
+fviz_nbclust(poke_scale, kmeans, method = "silhouette")
+fviz_nbclust(poke_scale, kmeans, method = "gap_stat")
+fviz_nbclust(poke_scale, kmeans, method = "wss")
 
-km2 <- kmeans(poke_stats, centers = 2, nstart = 25)
-km3 <- kmeans(poke_stats, centers = 3, nstart = 25)
-km4 <- kmeans(poke_stats, centers = 4, nstart = 25)
-km5 <- kmeans(poke_stats, centers = 5, nstart = 25)
+km5 <- kmeans(poke_scale, centers = 5, nstart = 25)
+km10 <- kmeans(poke_scale, centers = 10, nstart = 25)
 
-fviz_cluster(km2, data = poke_stats, ellipse.type = "norm", ggtheme = theme_minimal(), labelsize = 0)
-fviz_cluster(km3, data = poke_stats, ellipse.type = "norm", ggtheme = theme_minimal(), labelsize = 0)
-fviz_cluster(km4, data = poke_stats, ellipse.type = "norm", ggtheme = theme_minimal(), labelsize = 0)
-fviz_cluster(km5, data = poke_stats, ellipse.type = "norm", ggtheme = theme_minimal(), labelsize = 0)
+#fviz_cluster(km4, data = poke_scale, ellipse.type = "norm", ggtheme = theme_minimal(), labelsize = 0)
+fviz_cluster(km5, data = poke_scale, ggtheme = theme_minimal(), labelsize = 0)
+fviz_cluster(km10, data = poke_scale, ggtheme = theme_minimal(), labelsize = 0)
 
+# Data Analysis...................................................................................................................
+
+poke_stats <- cbind(poke_stats, km5[1])
+poke_stats <- cbind(poke_stats, km10[1])
+
+poke_stats[,7] <- as.factor(poke_stats[,7])
+poke_stats[,8] <- as.factor(poke_stats[,8])
+
+colnames(poke_stats)[7] <- "five"
+colnames(poke_stats)[8] <- "ten"
+
+aggregate(poke_stats[1:6], by = list(Cluster = poke_stats$five), mean)
+aggregate(poke_stats[1:6], by = list(Cluster = poke_stats$ten), mean)
+
+
+# Data Viz........................................................................................................................
+
+
+data_five <- melt(aggregate(poke_stats[1:6], by = list(Cluster = poke_stats$five), mean), id.vars = "Cluster")
+data_ten <- melt(aggregate(poke_stats[1:6], by = list(Cluster = poke_stats$ten), mean), id.vars = "Cluster")
+
+
+ggplot(data_five, aes(x = factor(Cluster), y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.6) +
+  scale_fill_manual(values = c("red", "blue", "green", "purple", "orange", "pink")) +  # Specify colors
+  theme_bw() +
+  labs(x = "Cluster", y = "Value", title = "Grouped Barplot by Cluster")
+
+ggplot(data_ten, aes(x = factor(Cluster), y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.6) +
+  scale_fill_manual(values = c("red", "blue", "green", "purple", "orange", "pink")) +  # Specify colors
+  theme_bw() +
+  labs(x = "Cluster", y = "Value", title = "Grouped Barplot by Cluster")
+
+distance <- get_dist(poke_stats)
+fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"), show_labels = FALSE)
+
+
+# Data Export........................................................................................................................
+
+write_xlsx(cbind(1:nrow(poke_stats), rownames(poke_stats), poke_stats), "C:\\Users\\Richard\\Documents\\R Projects\\Pokemon Segmentation\\poke_stats.xlsx", col_names = TRUE, format_headers = TRUE)
