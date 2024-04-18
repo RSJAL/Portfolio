@@ -1,0 +1,97 @@
+#Segmentation Analysis of Pokemon Stats
+
+library(rvest)
+library(factoextra)
+library(cluster)
+library(stringr)
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+library(writexl)
+library(Rokemon)
+library(dendextend)
+library(tidyverse)
+
+# Data Import................................................................................................................
+
+
+url <- "https://bulbapedia.bulbagarden.net/wiki/List_of_fully_evolved_Pok%C3%A9mon_by_base_stats"
+
+tables <- read_html(url) %>% html_table(fill = TRUE)
+
+
+poke_df <- data.frame(tables[[1]])
+
+poke_df <- merge(poke_df, pokemon[,c(1,2,4,5)], by.x = "Pokémon", by.y = "name", all.x = TRUE)
+
+poke_df <- poke_df[!grepl("Mega", rownames(poke_df)),]
+
+poke_df <- poke_df[order(poke_df$pokedex_number), ]
+
+rownames(poke_df) <- poke_df[,1]
+
+poke_df <- poke_df[,c(-1:-3, -10:-11)]
+
+
+
+#poke_df <- poke_df[!str_count(rownames(poke_df), "Raichu") > 1,]
+
+for (i in rownames(poke_df)) {
+  
+  poke_df <- poke_df[!str_count(rownames(poke_df), i) > 1,]
+  
+}
+
+
+poke_scale <- data.frame(scale(poke_df[,1:6]))
+
+
+# Segmentation..................................................................................................................
+
+fviz_nbclust(poke_scale, kmeans, method = "silhouette", k.max = 20)
+fviz_nbclust(poke_scale, kmeans, method = "gap_stat")
+fviz_nbclust(poke_scale, kmeans, method = "wss")
+
+km5 <- kmeans(poke_scale, centers = 5, nstart = 25)
+
+
+#fviz_cluster(km4, data = poke_scale, ellipse.type = "norm", ggtheme = theme_minimal(), labelsize = 0)
+fviz_cluster(km5, data = poke_scale, ggtheme = theme_minimal(), labelsize = 0)
+
+
+# Data Analysis...................................................................................................................
+
+poke_df <- cbind(poke_df, km5[1])
+
+poke_df[,10] <- as.factor(poke_df[,10])
+
+
+aggregate(poke_df[1:6], by = list(Cluster = poke_df$cluster), mean)
+
+
+
+# Data Viz........................................................................................................................
+
+
+data_five <- melt(aggregate(poke_df[1:6], by = list(Cluster = poke_df$cluster), mean), id.vars = "Cluster")
+
+
+
+ggplot(data_five, aes(x = factor(Cluster), y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.6) +
+  scale_fill_manual(values = c("red", "blue", "green", "purple", "orange", "pink")) +  # Specify colors
+  theme_bw() +
+  labs(x = "Cluster", y = "Value", title = "Grouped Barplot by Cluster")
+
+d <- get_dist(poke_df, method = "euclidean")
+fviz_dist(d, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"), show_labels = FALSE)
+
+
+# Data Export........................................................................................................................
+
+
+
+write_xlsx(cbind(1:nrow(poke_df), rownames(poke_df), poke_df), "C:\\Users\\Richard\\Documents\\R Projects\\Pokemon Segmentation\\poke_df.xlsx", col_names = TRUE, format_headers = TRUE)
+write_xlsx(pokemon, "C:\\Users\\Richard\\Documents\\R Projects\\Pokemon Segmentation\\pokemonf.xlsx", col_names = TRUE, format_headers = TRUE)
+
+
