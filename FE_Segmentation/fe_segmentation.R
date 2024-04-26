@@ -5,6 +5,7 @@ library(factoextra)
 library(cluster)
 library(lattice)
 library(plotly)
+library(corrplot)
 
 # Data Import................................................................................................................
 
@@ -23,25 +24,28 @@ init <- data.frame(Name = character(),
                    Def = numeric(), 
                    Res = numeric(), 
                    Cha = numeric(), 
-                   Group = numeric())
+                   House = numeric())
 
 
 for (i in 1:length(tables)) {
   
-        tables[[i]]$Group <- i
+        tables[[i]]$House <- i
         init <- rbind(init, tables[[i]])
         
   }
 
 
 fe_stats <- data.frame(init)
-fe_stats$Group <- as.factor(fe_stats$Group)
+fe_stats$House <- as.factor(fe_stats$House)
 
 fe_stats <- fe_stats[!grepl("(NPC)", fe_stats$Name),]
 #fe_stats <- fe_stats[!grepl("Cyril", fe_stats$Name),]
+
+
 rownames(fe_stats) <- fe_stats[,1]
 fe_stats <- fe_stats[-1]
-#fe_stats[30,1:9] <- fe_stats[30,1:9] + 20
+
+#fe_stats[30,1:9] <- fe_stats[32,1:9] + 20
 
 fe_scale <- data.frame(scale(fe_stats[-10]))
 
@@ -59,19 +63,12 @@ km3 <- kmeans(fe_scale, centers = 3, nstart = 25)
 km4 <- kmeans(fe_scale, centers = 4, nstart = 25)
 km5 <- kmeans(fe_scale, centers = 5, nstart = 25)
 
-km6 <- kmeans(fe_scale, centers = 6, nstart = 25)
-km8 <- kmeans(fe_scale, centers = 8, nstart = 25)
 
 
-fviz_cluster(km2, data = fe_scale, ellipse.type = "norm", ggtheme = theme_minimal())
-fviz_cluster(km3, data = fe_scale, ellipse.type = "norm", ggtheme = theme_minimal())
+fviz_cluster(km2, data = fe_scale, ellipse.type = "norm", ggtheme = theme_minimal(), repel = TRUE)
+fviz_cluster(km3, data = fe_scale, ellipse.type = "norm", ggtheme = theme_minimal(), repel = TRUE)
 fviz_cluster(km4, data = fe_scale, ellipse.type = "norm", ggtheme = theme_minimal(), repel = TRUE)
-#5 Cluster is worthless statistically but useful for showing when adding more clusters stops becoming useful
-fviz_cluster(km5, data = fe_scale, ellipse.type = "norm", ggtheme = theme_minimal())
-
-fviz_cluster(km6, data = fe_scale, ellipse.type = "norm", ggtheme = theme_minimal())
-fviz_cluster(km8, data = fe_scale, ellipse.type = "norm", ggtheme = theme_minimal())
-
+fviz_cluster(km5, data = fe_scale, ellipse.type = "norm", ggtheme = theme_minimal(), repel = TRUE)
 
 # Data Analysis...................................................................................................................
 
@@ -80,15 +77,21 @@ fe_stats[,11] <- as.factor(fe_stats[,11])
 
 aggregate(fe_stats[1:9], by = list(Cluster = fe_stats$cluster), mean)
 
-aggregate(fe_stats[1:9], by = list(Group = fe_stats$Group), mean)
+aggregate(fe_stats[1:9], by = list(House = fe_stats$House), mean)
+
+# Significant predictive model attained by step-wise regression
+regr <- lm(as.numeric(cluster) ~ HP + Mag + Dex + Def, data = fe_stats)
 
 # Data Viz........................................................................................................................
+
+corrplot(cor(fe_stats[,1:9]))
 
 distance <- get_dist(fe_stats[1:9])
 fviz_dist(distance, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
 
-barplot(table(fe_stats$Group), main = "Members of Each House", ylab = "Count", xlab = "Group", col = c("green", "red", "blue", "yellow", "snow", "navy", "grey"))
-barplot(table(fe_stats$cluster), main = "Members of Each House", ylab = "Count", xlab = "Group")
+barplot(table(fe_stats$House), main = "Members of Each House", ylab = "Count", xlab = "House", col = c("green", "red", "blue", "yellow", "snow", "navy", "grey"))
+barplot(table(fe_stats$cluster), main = "Members of Each House", ylab = "Count", xlab = "House")
+
 xyplot(Str ~ Mag, group=cluster, data=fe_stats, auto.key=list(space="right"), jitter.x=TRUE, jitter.y=TRUE, pch = 19)
 
 plot_ly(
