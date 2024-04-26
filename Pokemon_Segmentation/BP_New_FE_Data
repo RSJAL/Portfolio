@@ -1,0 +1,78 @@
+#Segmentation Analysis of Pokemon Stats
+
+library(rvest)
+library(factoextra)
+library(cluster)
+library(lattice)
+
+# Data Import................................................................................................................
+
+
+url <- "https://bulbapedia.bulbagarden.net/wiki/List_of_fully_evolved_Pok%C3%A9mon_by_base_stats"
+
+tables <- read_html(url) %>% html_table(fill = TRUE)
+
+poke_stats <- data.frame(tables[[1]])
+
+rownames(poke_stats) <- poke_stats[,3]
+
+poke_stats <- poke_stats[,c(-1:-3, -10:-11)]
+
+
+poke_stats <- poke_stats[!grepl("Mega ", rownames(poke_stats)),]
+
+for (i in rownames(poke_df)) {
+  
+  poke_stats <- poke_stats[!str_count(rownames(poke_stats), i) > 1,]
+  
+}
+
+
+
+poke_scale <- data.frame(scale(poke_stats))
+
+
+# Segmentation..................................................................................................................
+
+fviz_nbclust(poke_scale, kmeans, method = "silhouette", k.max = 15)
+fviz_nbclust(poke_scale, kmeans, method = "gap_stat", k.max = 25)
+fviz_nbclust(poke_scale, kmeans, method = "wss", k.max = 25)
+
+km2 <- kmeans(poke_scale, centers = 2, nstart = 25)
+km3 <- kmeans(poke_scale, centers = 3, nstart = 25)
+km4 <- kmeans(poke_scale, centers = 4, nstart = 25)
+km8 <- kmeans(poke_scale, centers = 8, nstart = 25)
+
+km12 <- kmeans(poke_scale, centers = 12, nstart = 25)
+
+
+
+fviz_cluster(km2, data = poke_scale, ellipse.type = "norm", ggtheme = theme_minimal(), labelsize = 0)
+fviz_cluster(km3, data = poke_scale, ellipse.type = "norm", ggtheme = theme_minimal(), labelsize = 0)
+fviz_cluster(km5, data = poke_scale, ellipse.type = "norm", ggtheme = theme_minimal(), labelsize = 0)
+
+poke_stats <- cbind(poke_stats, km12[1])
+
+poke_df[,7] <- as.factor(poke_df[,7])
+
+data <- melt(aggregate(poke_stats[1:6], by = list(Cluster = poke_stats$cluster), mean), id.vars = "Cluster")
+
+ggplot(data, aes(x = factor(Cluster), y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.6) +
+  scale_fill_manual(values = c("red", "blue", "green", "purple", "orange", "pink")) +  # Specify colors
+  theme_bw() +
+  labs(x = "Cluster", y = "Value", title = "Grouped Barplot by Cluster")
+
+
+plot_ly(
+  text = rownames(poke_stats),
+  x = poke_stats$Attack, 
+  y = poke_stats$Defense, 
+  z = poke_stats$Sp..Attack, 
+  type = "scatter3d", 
+  mode = "markers", 
+  color = as.factor(poke_stats$cluster)) %>%
+  layout(title = "",
+         scene = list(xaxis = list(title = "HP"),
+                      yaxis = list(title = "Defense"),
+                      zaxis = list(title = "Special Attack")))
