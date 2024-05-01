@@ -1,0 +1,21 @@
+library(factoextra)
+
+data(swiss)
+
+dim(swiss)
+head(swiss)
+summary(swiss)
+
+fviz_nbclust(scale(swiss), kmeans, method = "silhouette")
+fviz_nbclust(scale(swiss), kmeans, method = "gap_stat")
+fviz_nbclust(scale(swiss), kmeans, method = "wss")
+
+km7 <- kmeans(scale(swiss), centers = 7, nstart = 25)
+
+fviz_cluster(km7, data = swiss, ellipse.type = "norm", ggtheme = theme_minimal(), repel = TRUE)
+
+swiss <- cbind(swiss, km7[1])
+
+aggregate(swiss[1:6], by = list(Cluster = swiss$cluster), mean)
+
+#-> Click this to the the result https://www.google.com/maps/d/u/0/edit?mid=1XAB7Ry-o77gWt6wS_wFAJYv7MEy-Uqc&ll=46.6718084869248%2C7.185731356830484&z=9
