@@ -1,0 +1,20 @@
+
+library(factoextra)
+
+data(swiss)
+
+dim(swiss)
+head(swiss)
+summary(swiss)
+
+fviz_nbclust(scale(swiss), kmeans, method = "silhouette")
+fviz_nbclust(scale(swiss), kmeans, method = "gap_stat")
+fviz_nbclust(scale(swiss), kmeans, method = "wss")
+
+km7 <- kmeans(scale(swiss), centers = 7, nstart = 25)
+
+fviz_cluster(km7, data = swiss, ellipse.type = "norm", ggtheme = theme_minimal(), repel = TRUE)
+
+swiss <- cbind(swiss, km7[1])
+
+aggregate(swiss[1:6], by = list(Cluster = swiss$cluster), mean)
