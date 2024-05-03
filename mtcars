@@ -1,20 +1,20 @@
 
 library(factoextra)
 
-data(swiss)
+data(mtcars)
 
-dim(swiss)
-head(swiss)
-summary(swiss)
+dim(mtcars)
+head(mtcars)
+summary(mtcars)
 
-fviz_nbclust(scale(swiss), kmeans, method = "silhouette")
-fviz_nbclust(scale(swiss), kmeans, method = "gap_stat")
-fviz_nbclust(scale(swiss), kmeans, method = "wss")
+fviz_nbclust(scale(mtcars), kmeans, method = "silhouette")
+fviz_nbclust(scale(mtcars), kmeans, method = "gap_stat")
+fviz_nbclust(scale(mtcars), kmeans, method = "wss")
 
-km7 <- kmeans(scale(swiss), centers = 7, nstart = 25)
+km4 <- kmeans(scale(mtcars), centers = 4, nstart = 25)
 
-fviz_cluster(km7, data = swiss, ellipse.type = "norm", ggtheme = theme_minimal(), repel = TRUE)
+fviz_cluster(km4, data = mtcars, ellipse.type = "norm", ggtheme = theme_minimal(), repel = TRUE)
 
-swiss <- cbind(swiss, km7[1])
+mtcars <- cbind(mtcars, km4[1])
 
-aggregate(swiss[1:6], by = list(Cluster = swiss$cluster), mean)
+aggregate(mtcars, by = list(Cluster = mtcars$cluster), mean)
