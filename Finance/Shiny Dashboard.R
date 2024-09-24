@@ -3,6 +3,8 @@ library(ggplot2)
 library(dplyr)
 library(shinythemes)
 
+dataset <- mtcars
+
 ui <- fluidPage(
   titlePanel("Dashboard with Dynamic Graph"),
   
@@ -22,7 +24,7 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   output$plot <- renderPlot({
-    ggplot(mtcars, aes_string(x = input$xvar, y = input$yvar)) +
+    ggplot(dataset, aes_string(x = input$xvar, y = input$yvar)) +
       geom_point()
   })
 }
