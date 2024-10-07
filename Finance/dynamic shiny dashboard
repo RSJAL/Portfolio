@@ -43,5 +43,5 @@ runAppWithDataset <- function(data) {
   )
 }
 
-runAppWithDataset(economist_data)
+#runAppWithDataset(economist_data)
 
