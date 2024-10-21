@@ -1,0 +1,52 @@
+library(rugarch)
+library(quantmod)
+
+#------------------------------------------------------------
+#Pull market data
+
+getSymbols("AAPL", from = "2020-01-01", to = Sys.Date())
+
+ticker <- AAPL
+
+close_prices <- Cl(ticker)
+
+returns_data <- diff(log(close_prices))[-1]
+returns_data <- as.numeric(na.omit(returns_data))
+
+#------------------------------------------------------------
+#Define model parameters
+
+param <- ugarchspec(variance.model = 
+                     list(model = "sGARCH", 
+                          garchOrder = c(1, 1)),
+                   mean.model = list(armaOrder = c(0, 0)))
+
+garch_fit <- ugarchfit(param, returns_data)
+
+forecast <- ugarchforecast(garch_fit, n.ahead = 1)
+sigma_forecast <- as.numeric(sigma(forecast))
+
+#------------------------------------------------------------
+#Confidence Interval
+
+current_price <- as.numeric(Cl(ticker)[nrow(ticker)])
+
+mu <- mean(returns_data)
+lower_bound <- current_price * (1 + mu - 1.96 * sigma_forecast)
+upper_bound <- current_price * (1 + mu + 1.96 * sigma_forecast)
+
+conf_int <- c(lower_bound, upper_bound)
+conf_int
+
+#------------------------------------------------------------
+#Interquantile Range
+
+lower_quantile <- quantile(returns_data, 0.025)
+upper_quantile <- quantile(returns_data, 0.975)
+
+expected_return <- current_price * (1 + mu)  # Expected price
+lower_bound <- expected_return * (1 + lower_quantile)
+upper_bound <- expected_return * (1 + upper_quantile)
+
+interquant_rng <- c(lower_bound, upper_bound)
+interquant_rng
