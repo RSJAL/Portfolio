@@ -1,0 +1,41 @@
+library(rugarch)
+library(quantmod)
+
+trading_range <- function(ticker_symbol, n_days_ahead){
+  
+  #------------------------------------------------------------
+  #Pull market data
+  
+  trading_data <- getSymbols(ticker_symbol, from = "2020-01-01", to = Sys.Date(), auto.assign = FALSE)
+  
+  close_prices <- Cl(trading_data)
+  
+  returns_data <- diff(log(close_prices))[-1]
+  returns_data <- as.numeric(na.omit(returns_data))
+  
+  #------------------------------------------------------------
+  #Define model parameters
+  
+  param <- ugarchspec(variance.model = 
+                        list(model = "sGARCH", 
+                             garchOrder = c(1, 1)),
+                      mean.model = list(armaOrder = c(0, 0)))
+  
+  garch_fit <- ugarchfit(param, returns_data)
+  
+  forecast <- ugarchforecast(garch_fit, n.ahead = n_days_ahead)
+  sigma_forecast <- as.numeric(sigma(forecast)[n_days_ahead])*sqrt(n_days_ahead)
+  
+  #------------------------------------------------------------
+  #Confidence Interval
+  
+  current_price <- as.numeric(Cl(ticker)[nrow(ticker)])
+  
+  mu <- mean(returns_data)*n_days_ahead
+  
+  lower_bound <- current_price * (1 + mu - 1.96 * sigma_forecast)
+  upper_bound <- current_price * (1 + mu + 1.96 * sigma_forecast)
+  
+  c(lower_bound, upper_bound)
+  
+}
