@@ -4,6 +4,13 @@ library(quantmod)
 trading_range <- function(ticker_symbol, n_days_ahead){
   
   #------------------------------------------------------------
+  #Optional Variables
+  
+  if(missing(n_days_ahead)) {
+    n_days_ahead = 1
+  }
+  
+  #------------------------------------------------------------
   #Pull market data
   
   trading_data <- getSymbols(ticker_symbol, from = "2020-01-01", to = Sys.Date(), auto.assign = FALSE)
