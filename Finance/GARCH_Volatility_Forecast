@@ -1,0 +1,34 @@
+library(quantmod)
+library(rugarch)
+
+ticker <- "SPX"
+
+# Download historical data for a stock (e.g., Apple)
+getSymbols("SPX", src = "yahoo", from = "2020-01-01", to = Sys.Date())
+
+# Calculate daily log returns
+returns <- diff(log(Cl(SPX)))
+returns <- na.omit(returns)
+
+# Define a GARCH(1,1) model specification
+spec <- ugarchspec(
+  variance.model = list(model = "sGARCH", garchOrder = c(1, 1)),
+  mean.model = list(armaOrder = c(0, 0), include.mean = TRUE),
+  distribution.model = "norm"
+)
+
+# Fit the GARCH model to the returns data
+garch_fit <- ugarchfit(spec = spec, data = returns)
+summary(garch_fit)
+
+# Forecast future volatility for the next 20 days
+garch_forecast <- ugarchforecast(garch_fit, n.ahead = 100)
+predicted_volatility <- sigma(garch_forecast)
+
+# Plot the forecasted volatility
+plot(predicted_volatility, type = "l", main = c("Predicted Volatility:", ticker),
+     xlab = "Days Ahead", ylab = "Volatility")
+
+# Calculate the rate of increase in volatility
+rate_of_increase <- diff(predicted_volatility) / predicted_volatility[-length(predicted_volatility)]
+print(rate_of_increase)
