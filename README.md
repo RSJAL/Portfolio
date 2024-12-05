@@ -1,2 +1,1 @@
-# Portfolio
-Projects of Personal and Professional Interest
+# Projects of Personal and Professional Interest
